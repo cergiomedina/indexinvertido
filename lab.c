@@ -88,11 +88,24 @@ int main (int argc, char *argv[]){
          Documentos[i]= (char *)malloc(sizeof(char)*(cantidad_lineas_por_doc[i]*MAX_LINEA));
       }
 
-      for (i = 0; i < cantidad_documentos; ++i)
-      {
+      for (i = 0; i < cantidad_documentos; ++i){
          printf("Documento %i : Lineas -> %i\n",i,cantidad_lineas_por_doc[i] );
       }
-      
+      int indice=0;
+      for (i = 0; i < cantidad_documentos; ++i){
+         strcpy(Documentos[i],total_lineas[indice]);
+         indice++;
+         for(k=1;k<cantidad_lineas_por_doc[i];k++){
+            strcat(Documentos[i],total_lineas[indice]);
+            indice++;
+         }
+      }
+
+      for (i = 0; i < cantidad_documentos; ++i){
+         
+         printf("DOCUMENTO [%i]: %s\n",i,Documentos[i] );
+
+      }
   }
 
    MPI_Finalize();                               /* Finaliza MPI */
