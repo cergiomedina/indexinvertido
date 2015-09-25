@@ -1,0 +1,8 @@
+este es un documento
+de prueba
+<end-document>
+hola como estan todos
+<end-document>
+napoleon y sus amigos
+van de paseo
+<end-document>
