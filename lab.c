@@ -8,6 +8,7 @@
 
 const char delimitador[]="<end-document>"; // 14 caracteres
 const char espacio[] = " ";
+const char index_documentos[]="documentos.txt";
 const int MAX_LINEA= 200;
 const int MAX_PALABRA= 20;
 char **vectorStop;
@@ -105,12 +106,17 @@ int main (int argc, char *argv[]){
       int seguir = 1;
       rewind(archivo);
       int *cantidad_lineas_por_doc = (int *)malloc(sizeof(int)*cantidad_documentos);
+      FILE * salida_documentos = fopen(index_documentos,"w");
+      int primera_linea = 0;
       for (i = 0; i < cantidad_documentos; ++i){ // obtengo la cantidad de lineas por documento, del archivo. en un documento 
+
          cantidad_lineas_por_doc[i]=0;
          while(seguir==1){ 
             if(fgets(linea,MAX_LINEA,archivo)==NULL){
                break;
             }
+            if(primera_linea==0) fprintf(salida_documentos, "%i, %s",i,linea);
+            primera_linea=1;
             diferencia = strncmp(delimitador,linea,14); // verifico si la linea leida es el final del documento 
             if(diferencia!=0){
                cantidad_lineas_por_doc[i]++;
@@ -119,6 +125,7 @@ int main (int argc, char *argv[]){
             }
          }
          seguir=1;
+         primera_linea=0;
       }
       rewind(archivo);
 
@@ -126,6 +133,7 @@ int main (int argc, char *argv[]){
       for (i = 0; i < cantidad_documentos; ++i){
          Documentos[i]= (char *)malloc(sizeof(char)*(cantidad_lineas_por_doc[i]*MAX_LINEA));
       }
+
 
       /*for (i = 0; i < cantidad_documentos; ++i){
          printf("Documento %i : Lineas -> %i\n",i,cantidad_lineas_por_doc[i] );
@@ -141,6 +149,11 @@ int main (int argc, char *argv[]){
       }
       int tamano_envio=0;
       int h;
+      // creo el indice de documentos
+      
+      fclose(salida_documentos);
+
+      // ------------------------------
       for (i = 0; i < cantidad_documentos; ++i){
          tamano_envio = cantidad_lineas_por_doc[i]*MAX_LINEA;
          //MPI_Send(Documentos[i],cantidad_lineas_por_doc[i]*MAX_LINEA,MPI_CHAR,i+1,cantidad_lineas_por_doc[i]*MAX_LINEA,MPI_COMM_WORLD);
