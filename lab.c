@@ -186,10 +186,27 @@ int main (int argc, char *argv[]){
                   repeticion_palabras[j]=0;
                }
             }
+         } // obtengo la cantidad de palabras UNICAS del documento
+      }
+      //printf("%i - Cantidad Palabras no repetidas: %i \n",rank,cantidad_palabras_no_repetidas);
+
+      vocabulario = (char **)malloc(sizeof(char*)*cantidad_palabras_no_repetidas);
+      for(i=0;i<cantidad_palabras_no_repetidas;i++){
+         vocabulario[i]=(char *)malloc(sizeof(char)*MAX_PALABRA);
+      }
+      j = 0;
+      for(i=0;i<cantidad_palabras;i++){ // agrego estas palabras unicaas al vocabulario que entregare al proceso 0
+         if(existe(palabras_del_documento[i],cantidad_palabras_no_repetidas,vocabulario)==0){ // si la palabra aun no ha sido agregada, se agrega al voc local
+            strcpy(vocabulario[j],palabras_del_documento[i]);
+            j++;
          }
       }
+      for (i = 0; i < cantidad_palabras_no_repetidas; ++i)
+      {
+         printf("[%i] : %s\n",rank,vocabulario[i] );
+      }
 
-      printf("%i - Cantidad Palabras no repetidas: %i \n",rank,cantidad_palabras_no_repetidas);
+      
    }
 
    MPI_Finalize();                               /* Finaliza MPI */
@@ -205,4 +222,13 @@ int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras)
       }
    }
    return resultado;
+}
+
+int existe(char *palabra,int cantidad_palabras,char **vocabulario){
+   int i;
+   for(i=0;i<cantidad_palabras;i++){
+      if(strncmp(palabra,vocabulario[i],MAX_PALABRA)==0){
+         return 1;
+      }
+   }return 0;
 }
