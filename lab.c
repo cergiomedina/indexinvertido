@@ -143,7 +143,7 @@ int main (int argc, char *argv[]){
       cantidad_palabras++;
       while( (palabra = strtok( NULL, car_inutiles )) != NULL )    // Posteriores llamadas
         {cantidad_palabras++;}
-      printf("Proceso [ %i ] Con Paalabras: %i\n",rank,cantidad_palabras );
+      //printf("Proceso [ %i ] Con Paalabras: %i\n",rank,cantidad_palabras );
 
       palabras_del_documento = (char **)malloc(sizeof(char *)*cantidad_palabras);
       for (i = 0; i < cantidad_palabras; ++i)
@@ -224,6 +224,7 @@ int main (int argc, char *argv[]){
       int **cantidad_palabras_por_documento;
       cantidad_palabras_por_documento=(int**)malloc(sizeof(int*)*cantidad_documentos);
       for(i=0;i<cantidad_documentos;i++) cantidad_palabras_por_documento[i] = (int *)malloc(sizeof(int));
+
       for(i=0;i<cantidad_documentos;i++){
          int j,k,cantidad_palabras_local;
          char **vocabulario_local;
@@ -247,7 +248,7 @@ int main (int argc, char *argv[]){
       for(i=0;i<cantidad_auxiliar_palabras;i++) vocabulario_auxiliar[i] = (char *)malloc(sizeof(char)*MAX_PALABRA);
          c=0;
       for(i=0;i<cantidad_documentos;i++){
-         printf("Documento %i - Palabras: %i\n", i,cantidad_palabras_por_documento[i][0]);
+        // printf("Documento %i - Palabras: %i\n", i,cantidad_palabras_por_documento[i][0]);
          for(a=0;a<cantidad_palabras_por_documento[i][0];a++){
             strcpy(vocabulario_auxiliar[c],vocabulario_todos_documentos[i][a]);
             c++;
@@ -290,6 +291,30 @@ int main (int argc, char *argv[]){
          }
       }
    
+      free(vocabulario_auxiliar);
+      //free(cantidad_auxiliar_palabras); // CREO INDEX
+      int *palabras_en_los_documentos = (int *)malloc(sizeof(int)*cantidad_palabras_no_repetidas);
+      for(i=0;i<cantidad_palabras_no_repetidas;i++) palabras_en_los_documentos[i]=0;
+      for(i=0;i<cantidad_palabras_no_repetidas;i++){
+         for(j=0;j<cantidad_documentos;j++){
+            for(k=0;k<cantidad_palabras_por_documento[j][0];k++){
+               if(strncmp(vocabulario_general[i],vocabulario_todos_documentos[j][k],MAX_PALABRA)==0){
+                  palabras_en_los_documentos[i]+=1;
+                  break;
+               }
+            }
+         }
+      }
+      // ESCRIBO EN EL Vocabulario.txt la salida del index
+      /*for(i=0;i<cantidad_palabras_no_repetidas;i++){
+         printf("%s, %i, %i\n",vocabulario_general[i],i,palabras_en_los_documentos[i] );
+      }*/
+
+      FILE *salida = fopen("vocabulario.txt","w");
+      for(i=0;i<cantidad_palabras_no_repetidas;i++){
+         fprintf(salida,"%s, %i, %i\n",vocabulario_general[i],i,palabras_en_los_documentos[i] );
+      }
+      fclose(salida);
 
    }  
 
