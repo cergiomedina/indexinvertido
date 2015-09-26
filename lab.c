@@ -129,7 +129,7 @@ int main (int argc, char *argv[]){
    if(rank!=0){ // comienzo a recivir mi documento asignado
 
       int tamano,seguir =1,cantidad_palabras=0,*repeticion_palabras;
-      char *documento_local, **palabras_del_documento, *documento_local_temp;
+      char *documento_local, **palabras_del_documento, *documento_local_temp,**vocabulario;
       char car_inutiles[4]=" \n\t";
       char *palabra;
 
@@ -140,7 +140,6 @@ int main (int argc, char *argv[]){
       MPI_Recv(documento_local,tamano,MPI_CHAR,0,1,MPI_COMM_WORLD,estado);
       strcpy(documento_local_temp,documento_local);
 
-      //printf("Proceso %i, Recibi mensaje: %s\n",rank,documento_local );
       palabra = strtok( documento_local, car_inutiles );    // Primera llamada => Primer token
       cantidad_palabras++;
       while( (palabra = strtok( NULL, car_inutiles )) != NULL )    // Posteriores llamadas
@@ -164,21 +163,33 @@ int main (int argc, char *argv[]){
          k++;
       }
 
-     /* for (i = 0; i < cantidad_palabras; ++i)
-      {
-         printf("[%i] : %s\n",rank,palabras_del_documento[i] );
-      }*/
       repeticion_palabras = (int *)malloc(sizeof(int)*cantidad_palabras);
-      int cantidad=0;
+      int cantidad=0,j;
       for (i = 0; i < cantidad_palabras; ++i)
       {
          cantidad = repeticion(palabras_del_documento[i],palabras_del_documento,cantidad_palabras);
          repeticion_palabras[i]=cantidad;
       }
-       for (i = 0; i < cantidad_palabras; ++i)
+       /*for (i = 0; i < cantidad_palabras; ++i)
       {
          printf("[%i] : %s - %i\n",rank,palabras_del_documento[i],repeticion_palabras[i] );
+      }*/
+      // quito las palabras repetidas y las agrego a mi vocabulario local
+      int cantidad_palabras_no_repetidas=0;
+      for(i=0;i<cantidad_palabras;i++){
+         if(repeticion_palabras[i]!=0){
+            cantidad_palabras_no_repetidas++;
+            repeticion_palabras[i]=0;
+            for (j = i; j < cantidad_palabras; j++)
+            {
+               if(strncmp(palabras_del_documento[i],palabras_del_documento[j],MAX_PALABRA)==0){
+                  repeticion_palabras[j]=0;
+               }
+            }
+         }
       }
+
+      printf("%i - Cantidad Palabras no repetidas: %i \n",rank,cantidad_palabras_no_repetidas);
    }
 
    MPI_Finalize();                               /* Finaliza MPI */
