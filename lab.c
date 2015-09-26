@@ -9,7 +9,7 @@
 const char delimitador[]="<end-document>"; // 14 caracteres
 const char espacio[] = " ";
 const int MAX_LINEA= 200;
-
+const int MAX_PALABRA= 20;
 
 int main (int argc, char *argv[]){
    int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k;
@@ -117,21 +117,46 @@ int main (int argc, char *argv[]){
 
    if(rank!=0){ // comienzo a recivir mi documento asignado
       int tamano,seguir =1,cantidad_palabras=0;
-      char *documento_local;
+      char *documento_local, **palabras_del_documento, *documento_local_temp;
       char car_inutiles[4]=" \n\t";
       char *palabra;
 
       MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
       MPI_Recv(&tamano,1,MPI_INT,0,0,MPI_COMM_WORLD,estado);
       documento_local = (char *)malloc(sizeof(char)*tamano);
+      documento_local_temp = (char *)malloc(sizeof(char)*tamano);
       MPI_Recv(documento_local,tamano,MPI_CHAR,0,1,MPI_COMM_WORLD,estado);
+      strcpy(documento_local_temp,documento_local);
 
       //printf("Proceso %i, Recibi mensaje: %s\n",rank,documento_local );
       palabra = strtok( documento_local, car_inutiles );    // Primera llamada => Primer token
       cantidad_palabras++;
       while( (palabra = strtok( NULL, car_inutiles )) != NULL )    // Posteriores llamadas
-        cantidad_palabras++;
+        {cantidad_palabras++;}
       printf("Proceso [ %i ] Con Paalabras: %i\n",rank,cantidad_palabras );
+
+      palabras_del_documento = (char **)malloc(sizeof(char *)*cantidad_palabras);
+      for (i = 0; i < cantidad_palabras; ++i)
+      {
+         palabras_del_documento[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
+      }
+
+      int k = 0;
+      palabra = strtok( documento_local_temp, car_inutiles );    // Primera llamada => Primer token
+      strcpy(palabras_del_documento[k],palabra);
+      palabra=NULL;
+      k++;      
+      while( (palabra = strtok( NULL, car_inutiles )) != NULL )    // Posteriores llamadas
+        {
+         strcpy(palabras_del_documento[k],palabra);
+         k++;
+      }
+
+      for (i = 0; i < cantidad_palabras; ++i)
+      {
+         printf("[%i] : %s\n",rank,palabras_del_documento[i] );
+      }
+
    }
 
    MPI_Finalize();                               /* Finaliza MPI */
