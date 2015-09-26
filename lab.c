@@ -125,7 +125,6 @@ int main (int argc, char *argv[]){
    MPI_Barrier(MPI_COMM_WORLD);
 // SS2 -------------------------------------------------------------------------------------------------
 // Obtengo las palabras del documento y creo el vocabulario local
-
    if(rank!=0){ // comienzo a recivir mi documento asignado
 
       int tamano,seguir =1,cantidad_palabras=0,*repeticion_palabras;
@@ -170,10 +169,6 @@ int main (int argc, char *argv[]){
          cantidad = repeticion(palabras_del_documento[i],palabras_del_documento,cantidad_palabras);
          repeticion_palabras[i]=cantidad;
       }
-       /*for (i = 0; i < cantidad_palabras; ++i)
-      {
-         printf("[%i] : %s - %i\n",rank,palabras_del_documento[i],repeticion_palabras[i] );
-      }*/
       // quito las palabras repetidas y las agrego a mi vocabulario local
       int cantidad_palabras_no_repetidas=0;
       for(i=0;i<cantidad_palabras;i++){
@@ -201,13 +196,50 @@ int main (int argc, char *argv[]){
             j++;
          }
       }
-      for (i = 0; i < cantidad_palabras_no_repetidas; ++i)
+      /*for (i = 0; i < cantidad_palabras_no_repetidas; ++i)
       {
          printf("[%i] : %s\n",rank,vocabulario[i] );
-      }
+      }*/
 
-      
+         MPI_Send(&cantidad_palabras_no_repetidas,1,MPI_INT,0,0,MPI_COMM_WORLD); // envio tamano del vocabulario
+         for(i=0;i<cantidad_palabras_no_repetidas;i++){
+            MPI_Send(vocabulario[i],strlen(vocabulario[i]),MPI_CHAR,0,1,MPI_COMM_WORLD);
+            //printf("PALABRA ENVADA: %s\n",vocabulario[i] );
+         }
+         //MPI_Send(vocabulario,cantidad_palabras_no_repetidas*MAX_PALABRA,MPI_CHAR,0,1,MPI_COMM_WORLD);
+         //printf("ENVIO %i palabras\n",cantidad_palabras_no_repetidas );
+         free(vocabulario);
+         free(repeticion_palabras);
+         free(palabras_del_documento);
    }
+
+   MPI_Barrier(MPI_COMM_WORLD);  
+// SS3 ----------------------------------------------------------------------------------------------
+// se le envio al proceso 0 el vocabulario local de cada una de los documentos, el los junta e indexa aquella informacion
+   if(rank==0){
+      char ** vocabulario_general;
+      for(i=0;i<cantidad_documentos;i++){
+         int j,k,cantidad_palabras_local;
+         char **vocabulario_local;
+
+         MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
+         MPI_Status *estado2 = (MPI_Status*)malloc(sizeof(MPI_Status));
+         MPI_Recv(&cantidad_palabras_local,1,MPI_INT,i+1,0,MPI_COMM_WORLD,estado);
+         //printf("Palabras Recibidas: %i\n", cantidad_palabras_local);
+         vocabulario_local=(char**)malloc(sizeof(char*)*cantidad_palabras_local);
+         for(j=0;j<cantidad_palabras_local;j++) vocabulario_local[j]=(char*)malloc(sizeof(char)*MAX_PALABRA);
+        // MPI_Recv(vocabulario_local,MAX_PALABRA*cantidad_palabras_local,MPI_CHAR,i+1,1,MPI_COMM_WORLD,estado2);
+         for(k=0;k<cantidad_palabras_local;k++){
+            MPI_Recv(vocabulario_local[k],MAX_PALABRA,MPI_CHAR,i+1,1,MPI_COMM_WORLD,estado2);
+         }
+         printf("ITERACION: %i\n",i );
+         for(j=0;j<cantidad_palabras_local;j++){
+            printf("Palabra Recibida: %s\n",vocabulario_local[j] );
+         }  
+      }
+     
+   }
+
 
    MPI_Finalize();                               /* Finaliza MPI */
    return 0;
