@@ -217,7 +217,13 @@ int main (int argc, char *argv[]){
 // SS3 ----------------------------------------------------------------------------------------------
 // se le envio al proceso 0 el vocabulario local de cada una de los documentos, el los junta e indexa aquella informacion
    if(rank==0){
-      char ** vocabulario_general;
+      char ** vocabulario_general=0,**vocabulario_auxiliar;
+      int cantidad_auxiliar_palabras=0,cantidad_final_palabras=0,a,b,c;
+      char ***vocabulario_todos_documentos;
+      vocabulario_todos_documentos=(char***)malloc(sizeof(char**)*cantidad_documentos);
+      int **cantidad_palabras_por_documento;
+      cantidad_palabras_por_documento=(int**)malloc(sizeof(int*)*cantidad_documentos);
+      for(i=0;i<cantidad_documentos;i++) cantidad_palabras_por_documento[i] = (int *)malloc(sizeof(int));
       for(i=0;i<cantidad_documentos;i++){
          int j,k,cantidad_palabras_local;
          char **vocabulario_local;
@@ -225,20 +231,32 @@ int main (int argc, char *argv[]){
          MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
          MPI_Status *estado2 = (MPI_Status*)malloc(sizeof(MPI_Status));
          MPI_Recv(&cantidad_palabras_local,1,MPI_INT,i+1,0,MPI_COMM_WORLD,estado);
+         cantidad_auxiliar_palabras+=cantidad_palabras_local;
          //printf("Palabras Recibidas: %i\n", cantidad_palabras_local);
          vocabulario_local=(char**)malloc(sizeof(char*)*cantidad_palabras_local);
          for(j=0;j<cantidad_palabras_local;j++) vocabulario_local[j]=(char*)malloc(sizeof(char)*MAX_PALABRA);
         // MPI_Recv(vocabulario_local,MAX_PALABRA*cantidad_palabras_local,MPI_CHAR,i+1,1,MPI_COMM_WORLD,estado2);
-         for(k=0;k<cantidad_palabras_local;k++){
+         for(k=0;k<cantidad_palabras_local;k++){ // recibo por proceso todas las palabras y las guardo en un vocabulario local (por documento)
             MPI_Recv(vocabulario_local[k],MAX_PALABRA,MPI_CHAR,i+1,1,MPI_COMM_WORLD,estado2);
          }
-         printf("ITERACION: %i\n",i );
-         for(j=0;j<cantidad_palabras_local;j++){
-            printf("Palabra Recibida: %s\n",vocabulario_local[j] );
-         }  
+         cantidad_palabras_por_documento[i][0]=cantidad_palabras_local;
+         vocabulario_todos_documentos[i]=vocabulario_local;
       }
-     
-   }
+      // creo un vocabulario auxiliar que pasaremos a reducir
+      vocabulario_auxiliar = (char **)malloc(sizeof(char*)*cantidad_auxiliar_palabras);
+      for(i=0;i<cantidad_auxiliar_palabras;i++) vocabulario_auxiliar[i] = (char *)malloc(sizeof(char)*MAX_PALABRA);
+         c=0;
+      for(i=0;i<cantidad_documentos;i++){
+         printf("Documento %i - Palabras: %i\n", i,cantidad_palabras_por_documento[i][0]);
+         for(a=0;a<cantidad_palabras_por_documento[i][0];a++){
+            strcpy(vocabulario_auxiliar[c],vocabulario_todos_documentos[i][a]);
+            c++;
+         }
+      }
+      for(i=0;i<cantidad_auxiliar_palabras;i++){
+         printf("Palabra: %s\n",vocabulario_auxiliar[i] );
+      }
+   }  
 
 
    MPI_Finalize();                               /* Finaliza MPI */
