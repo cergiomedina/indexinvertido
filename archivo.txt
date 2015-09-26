@@ -1,5 +1,9 @@
 este es un documento
 de prueba
+prueba
+prueba
+hermosa
+prueba
 <end-document>
 hola como estan todos
 vengo a saludarlos
@@ -8,4 +12,6 @@ muy lejano
 <end-document>
 napoleon y sus amigos
 van de paseo
+paseo
+napoleon
 <end-document>

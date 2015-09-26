@@ -10,6 +10,9 @@ const char delimitador[]="<end-document>"; // 14 caracteres
 const char espacio[] = " ";
 const int MAX_LINEA= 200;
 const int MAX_PALABRA= 20;
+FILE* stopwords;
+char documento_stopwords[200];
+int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras);
 
 int main (int argc, char *argv[]){
    int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k;
@@ -21,7 +24,7 @@ int main (int argc, char *argv[]){
 // SS1 ------------------------------------------------------------------------------
 // Leo todas las lineas del documento y las envio a los procesos equitativamente para que creen el vocabulario
    if(rank==0){
-      while((get=getopt(argc,argv,"f:"))!=-1)
+      while((get=getopt(argc,argv,"f:s:"))!=-1)
       switch(get){
          case 'f':
             archivo = fopen(optarg,"r");
@@ -29,6 +32,14 @@ int main (int argc, char *argv[]){
                printf("No se puede abrir el fichero %s\n",optarg);
                return 0;         
             }        
+            break;
+         case 's':
+            stopwords = fopen(optarg,"r");
+            if(archivo==NULL){
+               printf("No se puede abrir el fichero de stopwords %s\n",optarg);
+               return 0;         
+            }
+            fclose(stopwords);        
             break;
       }
       linea = (char *) malloc(sizeof(char)*MAX_LINEA);
@@ -116,7 +127,8 @@ int main (int argc, char *argv[]){
 // Obtengo las palabras del documento y creo el vocabulario local
 
    if(rank!=0){ // comienzo a recivir mi documento asignado
-      int tamano,seguir =1,cantidad_palabras=0;
+
+      int tamano,seguir =1,cantidad_palabras=0,*repeticion_palabras;
       char *documento_local, **palabras_del_documento, *documento_local_temp;
       char car_inutiles[4]=" \n\t";
       char *palabra;
@@ -152,14 +164,34 @@ int main (int argc, char *argv[]){
          k++;
       }
 
-      for (i = 0; i < cantidad_palabras; ++i)
+     /* for (i = 0; i < cantidad_palabras; ++i)
       {
          printf("[%i] : %s\n",rank,palabras_del_documento[i] );
+      }*/
+      repeticion_palabras = (int *)malloc(sizeof(int)*cantidad_palabras);
+      int cantidad=0;
+      for (i = 0; i < cantidad_palabras; ++i)
+      {
+         cantidad = repeticion(palabras_del_documento[i],palabras_del_documento,cantidad_palabras);
+         repeticion_palabras[i]=cantidad;
       }
-
+       for (i = 0; i < cantidad_palabras; ++i)
+      {
+         printf("[%i] : %s - %i\n",rank,palabras_del_documento[i],repeticion_palabras[i] );
+      }
    }
 
    MPI_Finalize();                               /* Finaliza MPI */
    return 0;
 }
 
+int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras){
+   int i,resultado=0,diferencia;
+   for(i=0;i<cantidad_palabras;i++){
+      diferencia=strncmp(palabra,palabras_documento[i],MAX_PALABRA);
+      if(diferencia==0){
+         resultado++;
+      }
+   }
+   return resultado;
+}
