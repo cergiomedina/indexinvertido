@@ -12,11 +12,10 @@ const int MAX_LINEA= 200;
 const int MAX_PALABRA= 20;
 FILE* stopwords;
 int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras);
-char **creaVectorStop(FILE *documento,char **vectorStop);
 
 int main (int argc, char *argv[]){
-   int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k;
-   char *linea,**total_lineas,**Documentos;
+   int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k,j;
+   char *linea,**total_lineas,**Documentos,*palabra;
    char *documento_stopwords=(char*)malloc(sizeof(char)*MAX_LINEA);
    char **vectorStop;
    int tamanoVectorStop;
@@ -56,14 +55,34 @@ int main (int argc, char *argv[]){
             cantidad_documentos++;
          }
       }
-
-      vectorStop= creaVectorStop(stopwords,vectorStop);
-      fclose(stopwords);
+// Creo el vector de las stopwords
       
-
-      for(i=0;i<tamanoVectorStop;i++){
-      printf("PALABRA INUTIL %i \n",tamanoVectorStop );
+      tamanoVectorStop=0;
+      char *palabra=(char*)malloc(sizeof(char)*MAX_PALABRA);
+      while(!feof(stopwords)){
+         if(fgets(palabra,MAX_PALABRA,stopwords)==NULL){
+               break;
+         }
+           tamanoVectorStop ++;
       }
+      printf("TAMANO VECTOR: %i\n",tamanoVectorStop );
+      vectorStop=(char**)malloc(sizeof(char*)*tamanoVectorStop);
+      for(i=0;i<tamanoVectorStop;i++){
+         vectorStop[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
+      }
+      rewind(stopwords);
+      j=0;
+      while(!feof(stopwords)){
+         if(fgets(vectorStop[j],MAX_PALABRA,stopwords)==NULL){
+               break;
+         }
+           j++;
+      }
+      fclose(stopwords);
+      /*for(i=0;i<tamanoVectorStop;i++){
+      printf("PALABRA INUTIL %s \n",vectorStop[i] );
+      }*/
+// ---------------------------------------------
 
       cantidad_lineas -=cantidad_documentos;
       free(linea);
@@ -142,8 +161,8 @@ int main (int argc, char *argv[]){
       char *documento_local, **palabras_del_documento, *documento_local_temp,**vocabulario;
       char car_inutiles[4]=" \n\t";
       char *palabra;
-      //printf("STOP: %s\n",documento_stopwords );
 
+      // recibo la informacion que me enviaron
       MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
       MPI_Recv(&tamano,1,MPI_INT,0,0,MPI_COMM_WORLD,estado);
       documento_local = (char *)malloc(sizeof(char)*tamano);
@@ -164,7 +183,7 @@ int main (int argc, char *argv[]){
       }
 
       int k = 0;
-      palabra = strtok( documento_local_temp, car_inutiles );    // Primera llamada => Primer token
+      palabra = strtok( documento_local_temp, car_inutiles );    // Primera llamada => Primer token // quito los espacios y enter
       strcpy(palabras_del_documento[k],palabra);
       palabra=NULL;
       k++;      
@@ -355,33 +374,3 @@ int existe(char *palabra,int cantidad_palabras,char **vocabulario){
    }return 0;
 }
 
-char **creaVectorStop(FILE *documento,char **vectorStop){
-   int *tamanoVectorStop=(int*)malloc(sizeof(int));
-   int tamano_vector=0; int i,j;
-   char *palabra=(char*)malloc(sizeof(char)*MAX_PALABRA);
-   while(!feof(documento)){
-      if(fgets(palabra,MAX_PALABRA,documento)==NULL){
-            break;
-      }
-        tamano_vector ++;
-   }
-   //printf("TAMANO VECTOR: %i\n",tamano_vector );
-   tamanoVectorStop[0]=tamano_vector;
-   vectorStop=(char**)malloc(sizeof(char*)*tamano_vector);
-   for(i=0;i<tamanoVectorStop[0];i++){
-      vectorStop[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
-   }
-   rewind(documento);
-   j=0;
-   while(!feof(documento)){
-      if(fgets(vectorStop[j],MAX_PALABRA,documento)==NULL){
-            break;
-      }
-        j++;
-   }
-      for(i=0;i<tamanoVectorStop[0];i++){
-      printf("PALABRA INUTIL %i = %s\n",i,vectorStop[i] );
-   }
-   return vectorStop;
-
-}
