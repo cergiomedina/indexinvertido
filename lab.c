@@ -11,12 +11,15 @@ const char espacio[] = " ";
 const int MAX_LINEA= 200;
 const int MAX_PALABRA= 20;
 FILE* stopwords;
-char documento_stopwords[200];
 int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras);
+char **creaVectorStop(FILE *documento,char **vectorStop);
 
 int main (int argc, char *argv[]){
    int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k;
    char *linea,**total_lineas,**Documentos;
+   char *documento_stopwords=(char*)malloc(sizeof(char)*MAX_LINEA);
+   char **vectorStop;
+   int tamanoVectorStop;
    FILE *archivo;
    MPI_Init (&argc, &argv);	                /* Inicia MPI */
    MPI_Comm_rank (MPI_COMM_WORLD, &rank);	/* obtiene el id del proceso actual */
@@ -39,7 +42,7 @@ int main (int argc, char *argv[]){
                printf("No se puede abrir el fichero de stopwords %s\n",optarg);
                return 0;         
             }
-            fclose(stopwords);        
+            strcpy(documento_stopwords,optarg);
             break;
       }
       linea = (char *) malloc(sizeof(char)*MAX_LINEA);
@@ -53,6 +56,15 @@ int main (int argc, char *argv[]){
             cantidad_documentos++;
          }
       }
+
+      vectorStop= creaVectorStop(stopwords,vectorStop);
+      fclose(stopwords);
+      
+
+      for(i=0;i<tamanoVectorStop;i++){
+      printf("PALABRA INUTIL %i \n",tamanoVectorStop );
+      }
+
       cantidad_lineas -=cantidad_documentos;
       free(linea);
       total_lineas = (char **) malloc(sizeof(char *)*cantidad_lineas);
@@ -126,11 +138,11 @@ int main (int argc, char *argv[]){
 // SS2 -------------------------------------------------------------------------------------------------
 // Obtengo las palabras del documento y creo el vocabulario local
    if(rank!=0){ // comienzo a recivir mi documento asignado
-
       int tamano,seguir =1,cantidad_palabras=0,*repeticion_palabras;
       char *documento_local, **palabras_del_documento, *documento_local_temp,**vocabulario;
       char car_inutiles[4]=" \n\t";
       char *palabra;
+      //printf("STOP: %s\n",documento_stopwords );
 
       MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
       MPI_Recv(&tamano,1,MPI_INT,0,0,MPI_COMM_WORLD,estado);
@@ -341,4 +353,35 @@ int existe(char *palabra,int cantidad_palabras,char **vocabulario){
          return 1;
       }
    }return 0;
+}
+
+char **creaVectorStop(FILE *documento,char **vectorStop){
+   int *tamanoVectorStop=(int*)malloc(sizeof(int));
+   int tamano_vector=0; int i,j;
+   char *palabra=(char*)malloc(sizeof(char)*MAX_PALABRA);
+   while(!feof(documento)){
+      if(fgets(palabra,MAX_PALABRA,documento)==NULL){
+            break;
+      }
+        tamano_vector ++;
+   }
+   //printf("TAMANO VECTOR: %i\n",tamano_vector );
+   tamanoVectorStop[0]=tamano_vector;
+   vectorStop=(char**)malloc(sizeof(char*)*tamano_vector);
+   for(i=0;i<tamanoVectorStop[0];i++){
+      vectorStop[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
+   }
+   rewind(documento);
+   j=0;
+   while(!feof(documento)){
+      if(fgets(vectorStop[j],MAX_PALABRA,documento)==NULL){
+            break;
+      }
+        j++;
+   }
+      for(i=0;i<tamanoVectorStop[0];i++){
+      printf("PALABRA INUTIL %i = %s\n",i,vectorStop[i] );
+   }
+   return vectorStop;
+
 }
