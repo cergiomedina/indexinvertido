@@ -253,9 +253,48 @@ int main (int argc, char *argv[]){
             c++;
          }
       }
-      for(i=0;i<cantidad_auxiliar_palabras;i++){
+      /*for(i=0;i<cantidad_auxiliar_palabras;i++){
          printf("Palabra: %s\n",vocabulario_auxiliar[i] );
+      }*/
+
+      int *repeticion_palabras = (int *) malloc(sizeof(int)*cantidad_auxiliar_palabras);
+      int cantidad=0,j;
+      for (i = 0; i < cantidad_auxiliar_palabras; ++i)
+      {
+         cantidad = repeticion(vocabulario_auxiliar[i],vocabulario_auxiliar,cantidad_auxiliar_palabras);
+         repeticion_palabras[i]=cantidad;
       }
+      // quito las palabras repetidas y las agrego a mi vocabulario local
+      int cantidad_palabras_no_repetidas=0;
+      for(i=0;i<cantidad_auxiliar_palabras;i++){
+         if(repeticion_palabras[i]!=0){
+            cantidad_palabras_no_repetidas++;
+            repeticion_palabras[i]=0;
+            for (j = i; j < cantidad_auxiliar_palabras; j++)
+            {
+               if(strncmp(vocabulario_auxiliar[i],vocabulario_auxiliar[j],MAX_PALABRA)==0){
+                  repeticion_palabras[j]=0;
+               }
+            }
+         }
+      }
+      for(i=0;i<cantidad_auxiliar_palabras;i++){
+         printf("Palabra-- %s - %i\n",vocabulario_auxiliar[i],repeticion_palabras[i] );
+      }
+/*
+      vocabulario = (char **)malloc(sizeof(char*)*cantidad_palabras_no_repetidas);
+      for(i=0;i<cantidad_palabras_no_repetidas;i++){
+         vocabulario[i]=(char *)malloc(sizeof(char)*MAX_PALABRA);
+      }
+      j = 0;
+      for(i=0;i<cantidad_auxiliar_palabras;i++){ // agrego estas palabras unicaas al vocabulario que entregare al proceso 0
+         if(existe(palabras_del_documento[i],cantidad_palabras_no_repetidas,vocabulario)==0){ // si la palabra aun no ha sido agregada, se agrega al voc local
+            strcpy(vocabulario[j],palabras_del_documento[i]);
+            j++;
+         }
+      }
+
+*/
    }  
 
 
