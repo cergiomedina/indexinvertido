@@ -217,7 +217,7 @@ int main (int argc, char *argv[]){
 // SS3 ----------------------------------------------------------------------------------------------
 // se le envio al proceso 0 el vocabulario local de cada una de los documentos, el los junta e indexa aquella informacion
    if(rank==0){
-      char ** vocabulario_general=0,**vocabulario_auxiliar;
+      char ** vocabulario_general,**vocabulario_auxiliar;
       int cantidad_auxiliar_palabras=0,cantidad_final_palabras=0,a,b,c;
       char ***vocabulario_todos_documentos;
       vocabulario_todos_documentos=(char***)malloc(sizeof(char**)*cantidad_documentos);
@@ -278,23 +278,19 @@ int main (int argc, char *argv[]){
             }
          }
       }
-      for(i=0;i<cantidad_auxiliar_palabras;i++){
-         printf("Palabra-- %s - %i\n",vocabulario_auxiliar[i],repeticion_palabras[i] );
-      }
-/*
-      vocabulario = (char **)malloc(sizeof(char*)*cantidad_palabras_no_repetidas);
-      for(i=0;i<cantidad_palabras_no_repetidas;i++){
-         vocabulario[i]=(char *)malloc(sizeof(char)*MAX_PALABRA);
-      }
+
+
+      vocabulario_general=(char**)malloc(sizeof(char*)*cantidad_palabras_no_repetidas);
+      for(i=0;i<cantidad_palabras_no_repetidas;i++) vocabulario_general[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
       j = 0;
       for(i=0;i<cantidad_auxiliar_palabras;i++){ // agrego estas palabras unicaas al vocabulario que entregare al proceso 0
-         if(existe(palabras_del_documento[i],cantidad_palabras_no_repetidas,vocabulario)==0){ // si la palabra aun no ha sido agregada, se agrega al voc local
-            strcpy(vocabulario[j],palabras_del_documento[i]);
+         if(existe(vocabulario_auxiliar[i],cantidad_palabras_no_repetidas,vocabulario_general)==0){ // si la palabra aun no ha sido agregada, se agrega al voc local
+            strcpy(vocabulario_general[j],vocabulario_auxiliar[i]);
             j++;
          }
       }
+   
 
-*/
    }  
 
 
