@@ -10,6 +10,8 @@ const char delimitador[]="<end-document>"; // 14 caracteres
 const char espacio[] = " ";
 const int MAX_LINEA= 200;
 const int MAX_PALABRA= 20;
+char **vectorStop;
+int tamanoVectorStop;
 FILE* stopwords;
 int repeticion(char *palabra, char ** palabras_documento, int cantidad_palabras);
 
@@ -17,8 +19,6 @@ int main (int argc, char *argv[]){
    int rank, size, get, cantidad_lineas=0,diferencia,cantidad_documentos=0,i,k,j;
    char *linea,**total_lineas,**Documentos,*palabra;
    char *documento_stopwords=(char*)malloc(sizeof(char)*MAX_LINEA);
-   char **vectorStop;
-   int tamanoVectorStop;
    FILE *archivo;
    MPI_Init (&argc, &argv);	                /* Inicia MPI */
    MPI_Comm_rank (MPI_COMM_WORLD, &rank);	/* obtiene el id del proceso actual */
@@ -63,9 +63,10 @@ int main (int argc, char *argv[]){
          if(fgets(palabra,MAX_PALABRA,stopwords)==NULL){
                break;
          }
+         palabra[strlen(palabra)-1]='\0';
            tamanoVectorStop ++;
       }
-      printf("TAMANO VECTOR: %i\n",tamanoVectorStop );
+      //printf("TAMANO VECTOR: %i\n",tamanoVectorStop );
       vectorStop=(char**)malloc(sizeof(char*)*tamanoVectorStop);
       for(i=0;i<tamanoVectorStop;i++){
          vectorStop[i]=(char*)malloc(sizeof(char)*MAX_PALABRA);
@@ -79,9 +80,7 @@ int main (int argc, char *argv[]){
            j++;
       }
       fclose(stopwords);
-      /*for(i=0;i<tamanoVectorStop;i++){
-      printf("PALABRA INUTIL %s \n",vectorStop[i] );
-      }*/
+      
 // ---------------------------------------------
 
       cantidad_lineas -=cantidad_documentos;
@@ -141,11 +140,17 @@ int main (int argc, char *argv[]){
          }
       }
       int tamano_envio=0;
+      int h;
       for (i = 0; i < cantidad_documentos; ++i){
          tamano_envio = cantidad_lineas_por_doc[i]*MAX_LINEA;
          //MPI_Send(Documentos[i],cantidad_lineas_por_doc[i]*MAX_LINEA,MPI_CHAR,i+1,cantidad_lineas_por_doc[i]*MAX_LINEA,MPI_COMM_WORLD);
          MPI_Send(&tamano_envio,1,MPI_INT,(i+1)%size,0,MPI_COMM_WORLD); // envio tamano del documento
          MPI_Send(Documentos[i],cantidad_lineas_por_doc[i]*MAX_LINEA,MPI_CHAR,(i+1)%size,1,MPI_COMM_WORLD);
+         MPI_Send(&tamanoVectorStop,1,MPI_INT,(i+1)%size,2,MPI_COMM_WORLD);
+
+         for(h=0;h<tamanoVectorStop;h++){ // envio las palabras del stopword
+            MPI_Send(vectorStop[h],MAX_PALABRA,MPI_CHAR,(i+1)%size,3,MPI_COMM_WORLD);
+         }
       }
 
       free(Documentos);
@@ -157,6 +162,8 @@ int main (int argc, char *argv[]){
 // SS2 -------------------------------------------------------------------------------------------------
 // Obtengo las palabras del documento y creo el vocabulario local
    if(rank!=0){ // comienzo a recivir mi documento asignado
+      char **vectorStop;
+      int tamanoVectorStopword,t;
       int tamano,seguir =1,cantidad_palabras=0,*repeticion_palabras;
       char *documento_local, **palabras_del_documento, *documento_local_temp,**vocabulario;
       char car_inutiles[4]=" \n\t";
@@ -165,10 +172,23 @@ int main (int argc, char *argv[]){
       // recibo la informacion que me enviaron
       MPI_Status *estado = (MPI_Status*)malloc(sizeof(MPI_Status));
       MPI_Recv(&tamano,1,MPI_INT,0,0,MPI_COMM_WORLD,estado);
+      MPI_Recv(&tamanoVectorStopword,1,MPI_INT,0,2,MPI_COMM_WORLD,estado);
       documento_local = (char *)malloc(sizeof(char)*tamano);
       documento_local_temp = (char *)malloc(sizeof(char)*tamano);
       MPI_Recv(documento_local,tamano,MPI_CHAR,0,1,MPI_COMM_WORLD,estado);
       strcpy(documento_local_temp,documento_local);
+      // cargo el vector de las stopwords 
+      vectorStop= (char **)malloc(sizeof(char*)*tamanoVectorStopword);
+      for(t=0;t<tamanoVectorStopword;t++){
+         vectorStop[t]=(char*)malloc(sizeof(char)*MAX_PALABRA);
+      }
+      for(t=0;t<tamanoVectorStopword;t++){ // recibo el vector con las palabras a eliminar del vocabulario
+         MPI_Recv(vectorStop[t],MAX_PALABRA,MPI_CHAR,0,3,MPI_COMM_WORLD,estado);
+         //printf("VECTOR %i: %s\n",rank,vectorStop[t] );
+      }
+
+      // -------------------------------------
+      //printf("%i\n",tamanoVectorStopword );
 
       palabra = strtok( documento_local, car_inutiles );    // Primera llamada => Primer token
       cantidad_palabras++;
@@ -200,6 +220,15 @@ int main (int argc, char *argv[]){
          cantidad = repeticion(palabras_del_documento[i],palabras_del_documento,cantidad_palabras);
          repeticion_palabras[i]=cantidad;
       }
+      // marco las stopwords con un 0 para no contarlas de aqui en adelante
+      int palabras_no_stopword=cantidad_palabras;
+      /*for(i=0;i<cantidad_palabras;i++){
+         if(esStopword(palabras_del_documento[i],stopwords,tamanoVectorStopword)==1){
+            repeticion_palabras[i]=0;
+            palabras_no_stopword--;
+         }
+      }*/
+      //printf("PALABRAS: %i - NO STOPWORDS: %i\n",cantidad_palabras, palabras_no_stopword );
       // quito las palabras repetidas y las agrego a mi vocabulario local
       int cantidad_palabras_no_repetidas=0;
       for(i=0;i<cantidad_palabras;i++){
@@ -374,3 +403,14 @@ int existe(char *palabra,int cantidad_palabras,char **vocabulario){
    }return 0;
 }
 
+int esStopword(char *palabra,char **stopwords,int tamanoVectorStop){
+   int i;
+   /*for(i=0;i<tamanoVectorStop;i++){
+      printf("COMPARANDO- %s - %s\n",palabra,stopwords[i] );
+      if(strncmp(palabra,stopwords[i],MAX_PALABRA)==0){
+         return 1;
+      }
+   }*/
+   return 0;
+
+}

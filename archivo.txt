@@ -4,6 +4,9 @@ prueba
 prueba
 hermosa
 prueba
+la
+la
+la
 <end-document>
 hola como estan todos
 vengo a saludarlos
